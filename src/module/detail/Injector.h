@@ -119,10 +119,9 @@ template <typename T>
 T unwrap(const InjectContext& ctx, Result<T> value) {
     value = std::move(value).or_else([&](auto err) -> Result<T> {
         return error(
-            "while loading argument of type {} (index {}) for module '{}':\n{}",
+            "while loading argument of type {} (index {}): {}",
             rfl::type_name_t<T>().name(),
             ctx.arg_index,
-            ctx.name,
             err);
     });
 

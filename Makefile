@@ -50,7 +50,7 @@ gen-doc: deps
 	cd $(TARGET_DIR) && $(CMAKE) --build . --target documentation
 
 test: build
-	cd $(TARGET_DIR) && ctest --output-on-failure
+	cd $(TARGET_DIR) && ctest --output-on-failure -V
 
 check-tidy: configure
 	run-clang-tidy                   \

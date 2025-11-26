@@ -35,7 +35,9 @@ class Context {
 template <typename T, typename... Args>
 Result<std::shared_ptr<T>> Context::emplace(const std::string& name, Args&&... args) {
     auto mod = std::make_shared<detail::ModuleBridge<T>>(std::forward<Args>(args)...);
-    return insertModule(name, mod).and_then([&] { return ok(std::move(mod)); });
+    return with(insertModule(name, mod), "in emplace('{}')", name).and_then([&] {
+        return ok(std::move(mod));
+    });
 }
 
 template <typename T>

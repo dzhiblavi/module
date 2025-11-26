@@ -12,30 +12,33 @@ Result<std::shared_ptr<detail::Module>> Context::getModule(const std::string& na
         return it->second;
     }
 
-    return loadModule(name);
+    return with(loadModule(name), "while loading '{}'", name);
 }
 
 Result<std::shared_ptr<detail::Module>> Context::loadModule(const std::string& name) {
     auto maybe_config = getConfig(name);
     if (!maybe_config) {
-        return error("module not configured");
+        return error("not configured");
     }
     auto config = *std::move(maybe_config);
 
     auto maybe_traits = storage_->get(config.cls);
     if (!maybe_traits) {
-        return error("unknown type '{}'", config.cls);
+        return error("unknown cls '{}'", config.cls);
     }
 
-    return maybe_traits.value()->create(this, config, name).and_then([&](auto mod) {
-        return insertModule(name, mod).and_then([&] { return ok(std::move(mod)); });
-    });
+    return with(maybe_traits.value()->create(this, config, name), "while creating")
+        .and_then([&](auto mod) {
+            return with(insertModule(name, mod), "while inserting").and_then([&] {
+                return ok(std::move(mod));
+            });
+        });
 }
 
 Result<void> Context::insertModule(
     const std::string& name, std::shared_ptr<detail::Module> module) {
     if (modules_.contains(name)) {
-        return error("module '{}' already exists", name);
+        return error("module already exists", name);
     }
 
     modules_.emplace(name, std::move(module));
@@ -53,7 +56,7 @@ std::optional<ModuleConfig> Context::getConfig(const std::string& name) {
 Result<void> Context::loadAllModules() {
     for (auto&& [name, config] : config_) {
         if (auto e = getModule(name); !e.has_value()) {
-            return error("error while loading '{}': {}", name, e.error());
+            return error("while loading '{}': {}", name, e.error());
         }
     }
 
