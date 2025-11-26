@@ -81,7 +81,7 @@ Result<Deps> get(InjectContext ctx) {
     result.reserve(deps.size() - ctx.arg_index);
 
     while (ctx.arg_index < deps.size()) {
-        auto res = inject<Module, typename Deps::value_type>(ctx);
+        auto res = get<Module, typename Deps::value_type>(ctx);
         if (!res) {
             return error(res.error());
         }
@@ -118,7 +118,7 @@ struct ValueArgumentInjector {
     template <typename T>
     requires(!std::is_same_v<std::decay_t<T>, Module>)
     operator T() const {
-        return unwrap(ctx, inject<Module, T>(ctx));
+        return unwrap(ctx, get<Module, T>(ctx));
     }
 
     InjectContext ctx;
@@ -131,13 +131,13 @@ struct RefArgumentInjector {
     template <typename T>
     requires(!std::is_same_v<std::decay_t<T>, Module>)
     operator T&() const {
-        return *unwrap(ctx, inject<Module, T*>(ctx));
+        return *unwrap(ctx, get<Module, T*>(ctx));
     }
 
     template <typename T>
     requires(!std::is_same_v<std::decay_t<T>, Module>)
     operator const T&() const {
-        return *unwrap(ctx, inject<Module, const T*>(ctx));
+        return *unwrap(ctx, get<Module, const T*>(ctx));
     }
 
     InjectContext ctx;
