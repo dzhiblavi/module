@@ -20,7 +20,7 @@ struct InjectContext {
 
 // Default injector (int, string, struct, ...)
 template <typename Module, typename T>
-Result<T> get(InjectContext /*ctx*/, const rfl::Generic& param) {
+Result<T> getImpl(InjectContext /*ctx*/, const rfl::Generic& param) {
     auto result = rfl::from_generic<T, rfl::DefaultIfMissing>(param);
     if (result) {
         return *result;
@@ -30,7 +30,7 @@ Result<T> get(InjectContext /*ctx*/, const rfl::Generic& param) {
 
 // Dependency injector (shared_ptr)
 template <typename Module, InstanceOfTemplate<std::shared_ptr> Dep>
-Result<Dep> get(InjectContext ctx, const rfl::Generic& param) {
+Result<Dep> getImpl(InjectContext ctx, const rfl::Generic& param) {
     auto name = param.to_string();
     if (!name) {
         return error("string depencency expected");
@@ -40,21 +40,21 @@ Result<Dep> get(InjectContext ctx, const rfl::Generic& param) {
 
 // Dependency injector (weak_ptr)
 template <typename Module, InstanceOfTemplate<std::weak_ptr> Dep>
-Result<Dep> get(InjectContext ctx, const rfl::Generic& param) {
+Result<Dep> getImpl(InjectContext ctx, const rfl::Generic& param) {
     return get<Module, std::shared_ptr<typename Dep::element_type>>(ctx, param);
 }
 
 // Dependency injector (raw pointer)
 template <typename Module, typename Dep>
 requires std::is_pointer_v<Dep>
-Result<Dep> get(InjectContext ctx, const rfl::Generic& param) {
+Result<Dep> getImpl(InjectContext ctx, const rfl::Generic& param) {
     return get<Module, std::shared_ptr<std::remove_pointer_t<Dep>>>(ctx, param)
         .and_then([](auto m) { return ok(m.get()); });
 }
 
 // Vector
 template <typename Module, InstanceOfTemplate<std::vector> Deps>
-Result<Deps> get(InjectContext ctx, const rfl::Generic& param) {
+Result<Deps> getImpl(InjectContext ctx, const rfl::Generic& param) {
     auto maybe_arr = param.to_array();
     if (!maybe_arr) {
         return error("array expected");
@@ -77,7 +77,7 @@ Result<Deps> get(InjectContext ctx, const rfl::Generic& param) {
 
 // Unordered map
 template <typename Module, InstanceOfTemplate<std::unordered_map> Deps>
-Result<Deps> get(InjectContext ctx, const rfl::Generic& param) {
+Result<Deps> getImpl(InjectContext ctx, const rfl::Generic& param) {
     auto maybe_obj = param.to_object();
     if (!maybe_obj) {
         return error("object expected");
@@ -130,6 +130,16 @@ inline Result<rfl::Generic> transform(InjectContext ctx, rfl::Generic param) {
     return (*plugin)->transform(std::move(param));
 }
 
+template <typename Module, typename T>
+Result<T> get(InjectContext ctx, const rfl::Generic& param) {
+    Result<rfl::Generic> maybe_param = transform(ctx, param);
+    if (!maybe_param) {
+        return error(maybe_param.error());
+    }
+
+    return getImpl<Module, T>(ctx, *std::move(maybe_param));
+}
+
 // Injects nth constructor argument
 template <typename Module, typename T>
 Result<T> get(InjectContext ctx) {
@@ -138,12 +148,7 @@ Result<T> get(InjectContext ctx) {
         return error("dependency index {} is out of range [0..{})", ctx.arg_index, deps.size());
     }
 
-    Result<rfl::Generic> maybe_param = transform(ctx, ctx.config.deps[ctx.arg_index]);
-    if (!maybe_param) {
-        return error(maybe_param.error());
-    }
-
-    return get<Module, T>(ctx, *std::move(maybe_param));
+    return get<Module, T>(ctx, ctx.config.deps[ctx.arg_index]);
 }
 
 template <typename T>
