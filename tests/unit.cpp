@@ -302,7 +302,7 @@ TEST_CASE("module/deps/module/unordered_map") {
 
 TEST_CASE("module/deps/plugin/no_plugin") {
     struct M : Plugin {
-        rfl::Generic transform(rfl::Generic param) override {
+        Result<rfl::Generic> transform(rfl::Generic param) override {
             auto value = (*param.to_object()).at("value").to_int().value();
             return value * 2;
         }
