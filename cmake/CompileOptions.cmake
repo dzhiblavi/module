@@ -19,20 +19,20 @@ add_compile_options(-Wno-error=unused-command-line-argument)
 add_compile_options(-g -gdwarf-4)
 
 # libc++
-if(CONF_USE_CUSTOM_LIBCXX)
-  message(STATUS "Using custom libc++ located at ${CONF_USE_CUSTOM_LIBCXX}")
+if(MODULECONF_USE_CUSTOM_LIBCXX)
+  message(STATUS "Using custom libc++ located at ${MODULECONF_USE_CUSTOM_LIBCXX}")
 
   add_compile_options(-nostdinc++ -isystem
-                      "${CONF_USE_CUSTOM_LIBCXX}/include/c++/v1")
+                      "${MODULECONF_USE_CUSTOM_LIBCXX}/include/c++/v1")
 
   add_link_options(
-    -nostdlib++ "-L${CONF_USE_CUSTOM_LIBCXX}/lib/c++"
-    -Wl,-rpath,"${CONF_USE_CUSTOM_LIBCXX}"/lib/c++ -lc++ -lc++abi)
+    -nostdlib++ "-L${MODULECONF_USE_CUSTOM_LIBCXX}/lib/c++"
+    -Wl,-rpath,"${MODULECONF_USE_CUSTOM_LIBCXX}"/lib/c++ -lc++ -lc++abi)
 else()
   message(STATUS "Using system libc++")
 
   add_compile_options(-stdlib=libc++)
   add_link_options(-stdlib=libc++)
-endif(CONF_USE_CUSTOM_LIBCXX)
+endif(MODULECONF_USE_CUSTOM_LIBCXX)
 
 message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")

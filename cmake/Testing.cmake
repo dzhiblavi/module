@@ -1,6 +1,6 @@
-option(CONF_BUILD_TESTS "Build tests" ON)
+option(MODULECONF_BUILD_TESTS "Build tests" ON)
 
-if(CONF_BUILD_TESTS)
+if(MODULECONF_BUILD_TESTS)
     if (PROJECT_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
         enable_testing()
     endif()

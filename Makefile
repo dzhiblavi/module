@@ -37,8 +37,8 @@ deps: _prepare_target_dirs
 
 configure: deps
 	cmake --preset $(CONAN_PRESET)                        \
-		-DCONF_BUILD_TESTS=$(TESTS)                       \
-		-DCONF_USE_CUSTOM_LIBCXX=$(LIBCXX_PATH)           \
+		-DMODULECONF_BUILD_TESTS=$(TESTS)                       \
+		-DMODULECONF_USE_CUSTOM_LIBCXX=$(LIBCXX_PATH)           \
 		-DASAN=$(ASAN)                                    \
 		-DTSAN=$(TSAN)                                    \
 		-DUBSAN=$(UBSAN)
