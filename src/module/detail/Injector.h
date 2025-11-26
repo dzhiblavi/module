@@ -51,7 +51,7 @@ Result<Dep> get(InjectContext ctx, const rfl::Generic& param) {
         .and_then([](auto m) { return ok(m.get()); });
 }
 
-// Dependency injector (vector of values)
+// Vector
 template <typename Module, InstanceOfTemplate<std::vector> Deps>
 Result<Deps> get(InjectContext ctx, const rfl::Generic& param) {
     auto maybe_arr = param.to_array();
@@ -69,6 +69,31 @@ Result<Deps> get(InjectContext ctx, const rfl::Generic& param) {
             return error(res.error());
         }
         result.push_back(*std::move(res));
+    }
+
+    return result;
+}
+
+// Unordered map
+template <typename Module, InstanceOfTemplate<std::unordered_map> Deps>
+requires std::same_as<std::string, typename Deps::key_type>
+Result<Deps> get(InjectContext ctx, const rfl::Generic& param) {
+    auto maybe_obj = param.to_object();
+    if (!maybe_obj) {
+        return error("object expected");
+    }
+
+    auto obj = *std::move(maybe_obj);
+    Deps result;
+    result.reserve(obj.size());
+
+    for (auto&& [k, v] : obj) {
+        auto res = get<Module, typename Deps::mapped_type>(ctx, v);
+        if (!res) {
+            return error(res.error());
+        }
+
+        result.emplace(k, *std::move(res));
     }
 
     return result;

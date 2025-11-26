@@ -11,25 +11,24 @@ struct I {
 };
 
 struct CI : I {
-    CI(std::vector<int> x, std::vector<int> y) : x_{x}, y_{y} {}
-    int foo() override { return x_.back() + y_.front(); }
+    CI(std::unordered_map<std::string, int> map) : map_{map} {}
+    int foo() override { return map_.size(); }
 
  private:
-    std::vector<int> x_, y_;
+    std::unordered_map<std::string, int> map_;
 };
 
 TEST_CASE("example") {
-    rfl::Generic x =
-        rfl::Generic::Array{rfl::Generic::VariantType(10), rfl::Generic::VariantType(20)};
-    rfl::Generic y =
-        rfl::Generic::Array{rfl::Generic::VariantType(100), rfl::Generic::VariantType(200)};
+    rfl::Object<rfl::Generic> map;
+    map.insert(std::make_pair("1", rfl::Generic::VariantType(10)));
+    map.insert(std::make_pair("2", rfl::Generic::VariantType(20)));
 
     ModulesConfig config{
         {
             "ci",
             ModuleConfig{
                 .cls = "mod::CI",
-                .deps = {x, y},
+                .deps = {map},
             },
         },
     };
@@ -43,7 +42,7 @@ TEST_CASE("example") {
     auto mod = context.getModule<I>("ci");
     REQUIRE(mod);
 
-    CHECK(120 == mod.value()->foo());
+    CHECK(2 == mod.value()->foo());
 }
 
 }  // namespace mod
