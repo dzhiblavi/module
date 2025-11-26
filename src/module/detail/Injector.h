@@ -17,80 +17,73 @@ struct InjectContext {
     size_t arg_index = 0;
 };
 
-// Value injector (config, string, int etc.)
+// Default injector (int, string, struct, ...)
 template <typename Module, typename T>
-Result<T> get(InjectContext ctx) {
-    auto&& deps = ctx.config.deps;
-
-    if (ctx.arg_index >= deps.size()) {
-        return error("dependency index {} is out of range [0..{})", ctx.arg_index, deps.size());
-    }
-
-    auto&& config = ctx.config.deps[ctx.arg_index];
-
-    auto result = rfl::from_generic<T, rfl::DefaultIfMissing>(config);
+Result<T> get(InjectContext /*ctx*/, const rfl::Generic& param) {
+    auto result = rfl::from_generic<T, rfl::DefaultIfMissing>(param);
     if (result) {
         return *result;
     }
-
     return error(result.error()->what());
 }
 
 // Dependency injector (shared_ptr)
 template <typename Module, InstanceOfTemplate<std::shared_ptr> Dep>
-Result<Dep> get(InjectContext ctx) {
-    auto&& deps = ctx.config.deps;
-
-    if (ctx.arg_index >= deps.size()) {
-        return error("dependency index {} is out of range [0..{})", ctx.arg_index, deps.size());
-    }
-
-    const auto& dep = deps[ctx.arg_index];
-    auto name = dep.to_string();
+Result<Dep> get(InjectContext ctx, const rfl::Generic& param) {
+    auto name = param.to_string();
     if (!name) {
         return error("string depencency expected");
     }
-
     return ctx.context->getModule<typename Dep::element_type>(*name);
 }
 
 // Dependency injector (weak_ptr)
 template <typename Module, InstanceOfTemplate<std::weak_ptr> Dep>
-Result<Dep> get(InjectContext ctx) {
-    return get<Module, std::shared_ptr<typename Dep::element_type>>(ctx);
+Result<Dep> get(InjectContext ctx, const rfl::Generic& param) {
+    return get<Module, std::shared_ptr<typename Dep::element_type>>(ctx, param);
 }
 
 // Dependency injector (raw pointer)
 template <typename Module, typename Dep>
 requires std::is_pointer_v<Dep>
-Result<Dep> get(InjectContext ctx) {
-    return get<Module, std::shared_ptr<std::remove_pointer_t<Dep>>>(ctx).and_then([](auto m) {
-        return ok(m.get());
-    });
+Result<Dep> get(InjectContext ctx, const rfl::Generic& param) {
+    return get<Module, std::shared_ptr<std::remove_pointer_t<Dep>>>(ctx, param)
+        .and_then([](auto m) { return ok(m.get()); });
 }
 
-// Dependency injector (vector of shared_ptrs)
+// Dependency injector (vector of values)
 template <typename Module, InstanceOfTemplate<std::vector> Deps>
-Result<Deps> get(InjectContext ctx) {
-    auto&& deps = ctx.config.deps;
-    if (ctx.arg_index >= deps.size()) {
-        return Deps{};
+Result<Deps> get(InjectContext ctx, const rfl::Generic& param) {
+    auto maybe_arr = param.to_array();
+    if (!maybe_arr) {
+        return error("array expected");
     }
 
+    auto arr = *std::move(maybe_arr);
     Deps result;
-    result.reserve(deps.size() - ctx.arg_index);
+    result.reserve(arr.size());
 
-    while (ctx.arg_index < deps.size()) {
-        auto res = get<Module, typename Deps::value_type>(ctx);
+    for (auto&& p : arr) {
+        auto res = get<Module, typename Deps::value_type>(ctx, p);
         if (!res) {
             return error(res.error());
         }
-
-        result.push_back(std::move(*res));
-        ++ctx.arg_index;
+        result.push_back(*std::move(res));
     }
 
     return result;
+}
+
+// Injects nth constructor argument
+template <typename Module, typename T>
+Result<T> get(InjectContext ctx) {
+    auto&& deps = ctx.config.deps;
+    if (ctx.arg_index >= deps.size()) {
+        return error("dependency index {} is out of range [0..{})", ctx.arg_index, deps.size());
+    }
+
+    auto&& config = ctx.config.deps[ctx.arg_index];
+    return get<Module, T>(ctx, config);
 }
 
 template <typename T>

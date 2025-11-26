@@ -5,20 +5,17 @@ if(CONF_BUILD_TESTS)
         enable_testing()
     endif()
 
-
     function(add_test path)
         include(CTest)
         include(Catch)
-
         find_package(Catch2 CONFIG REQUIRED)
-        find_package(GTest REQUIRED)
 
         string(REPLACE ".cpp" "" name ${path})
         string(REPLACE "./" "" name ${name})
 
         add_executable("${name}" "${path}")
 
-        target_link_libraries(${name} PRIVATE Catch2::Catch2WithMain GTest::gmock ${ARGN})
+        target_link_libraries(${name} PRIVATE Catch2::Catch2WithMain ${ARGN})
         target_include_directories(${name} PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/>)
 
         catch_discover_tests(${name} DISCOVERY_MODE PRE_TEST WORKING_DIRECTORY
