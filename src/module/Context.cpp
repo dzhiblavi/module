@@ -28,9 +28,18 @@ Result<std::shared_ptr<detail::Module>> Context::loadModule(const std::string& n
     }
 
     return maybe_traits.value()->create(this, config, name).and_then([&](auto mod) {
-        modules_.emplace(name, mod);
-        return ok(std::move(mod));
+        return insertModule(name, mod).and_then([&] { return ok(std::move(mod)); });
     });
+}
+
+Result<void> Context::insertModule(
+    const std::string& name, std::shared_ptr<detail::Module> module) {
+    if (modules_.contains(name)) {
+        return error("module '{}' already exists", name);
+    }
+
+    modules_.emplace(name, std::move(module));
+    return {};
 }
 
 std::optional<ModuleConfig> Context::getConfig(const std::string& name) {

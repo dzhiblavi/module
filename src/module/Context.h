@@ -2,6 +2,7 @@
 
 #include "module/Storage.h"
 #include "module/config.h"
+#include "module/detail/Bridge.h"
 #include "module/detail/Interface.h"
 
 #include <rfl/type_name_t.hpp>
@@ -17,15 +18,25 @@ class Context {
     template <typename T>
     Result<std::shared_ptr<T>> getModule(const std::string& name);
 
+    template <typename T, typename... Args>
+    std::shared_ptr<T> emplace(const std::string& name, Args&&... args);
+
  private:
     Result<std::shared_ptr<detail::Module>> getModule(const std::string& name);
     Result<std::shared_ptr<detail::Module>> loadModule(const std::string& name);
+    Result<void> insertModule(const std::string& name, std::shared_ptr<detail::Module> module);
     std::optional<ModuleConfig> getConfig(const std::string& name);
 
     ModulesConfig config_;
     Storage* storage_;
     std::unordered_map<std::string, std::shared_ptr<detail::Module>> modules_;
 };
+
+template <typename T, typename... Args>
+std::shared_ptr<T> Context::emplace(const std::string& name, Args&&... args) {
+    auto mod = std::make_shared<detail::ModuleBridge<T>>(std::forward<Args>(args)...);
+    return insertModule(name, mod).and_then([&] { return ok(std::move(mod)); });
+}
 
 template <typename T>
 Result<std::shared_ptr<T>> Context::getModule(const std::string& name) {
