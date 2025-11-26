@@ -37,7 +37,7 @@ std::expected<T, std::string> inject(InjectContext ctx) {
 }
 
 // Dependency injector (shared_ptr)
-template <typename Module, osc::utils::InstanceOfTemplate<std::shared_ptr> Dep>
+template <typename Module, InstanceOfTemplate<std::shared_ptr> Dep>
 std::expected<Dep, std::string> inject(InjectContext ctx) {
     auto&& deps = ctx.config.deps;
 
@@ -56,7 +56,7 @@ std::expected<Dep, std::string> inject(InjectContext ctx) {
 }
 
 // Dependency injector (weak_ptr)
-template <typename Module, osc::utils::InstanceOfTemplate<std::weak_ptr> Dep>
+template <typename Module, InstanceOfTemplate<std::weak_ptr> Dep>
 std::expected<Dep, std::string> inject(InjectContext ctx) {
     return inject<Module, std::shared_ptr<typename Dep::element_type>>(ctx);
 }
@@ -70,7 +70,7 @@ std::expected<Dep, std::string> inject(InjectContext ctx) {
 }
 
 // Dependency injector (vector of shared_ptrs)
-template <typename Module, osc::utils::InstanceOfTemplate<std::vector> Deps>
+template <typename Module, InstanceOfTemplate<std::vector> Deps>
 std::expected<Deps, std::string> inject(InjectContext ctx) {
     auto&& deps = ctx.config.deps;
     if (ctx.arg_index >= deps.size()) {
