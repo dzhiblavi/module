@@ -76,7 +76,6 @@ Result<Deps> get(InjectContext ctx, const rfl::Generic& param) {
 
 // Unordered map
 template <typename Module, InstanceOfTemplate<std::unordered_map> Deps>
-requires std::same_as<std::string, typename Deps::key_type>
 Result<Deps> get(InjectContext ctx, const rfl::Generic& param) {
     auto maybe_obj = param.to_object();
     if (!maybe_obj) {
@@ -88,12 +87,17 @@ Result<Deps> get(InjectContext ctx, const rfl::Generic& param) {
     result.reserve(obj.size());
 
     for (auto&& [k, v] : obj) {
-        auto res = get<Module, typename Deps::mapped_type>(ctx, v);
-        if (!res) {
-            return error(res.error());
+        auto key = get<Module, typename Deps::key_type>(ctx, k);
+        if (!key) {
+            return error(key.error());
         }
 
-        result.emplace(k, *std::move(res));
+        auto value = get<Module, typename Deps::mapped_type>(ctx, v);
+        if (!value) {
+            return error(value.error());
+        }
+
+        result.emplace(*std::move(key), *std::move(value));
     }
 
     return result;
