@@ -1,6 +1,7 @@
 #pragma once
 
 #include "module/Context.h"
+#include "module/Plugin.h"
 #include "module/detail/error.h"
 #include "module/detail/instance_of_template.h"
 
@@ -103,6 +104,32 @@ Result<Deps> get(InjectContext ctx, const rfl::Generic& param) {
     return result;
 }
 
+inline Result<rfl::Generic> transform(InjectContext ctx, rfl::Generic param) {
+    auto maybe_obj = param.to_object();
+    if (!maybe_obj) {
+        return param;
+    }
+
+    auto obj = *std::move(maybe_obj);
+    auto maybe_plugin = obj.get("@plugin");
+    if (!maybe_plugin) {
+        return param;
+    }
+
+    auto plugin_name_obj = *std::move(maybe_plugin);
+    auto maybe_plugin_name = plugin_name_obj.to_string();
+    if (!maybe_plugin_name) {
+        return error("@plugin value must be string");
+    }
+
+    auto plugin = ctx.context->getModule<Plugin>(*maybe_plugin_name);
+    if (!plugin) {
+        return error("while transforming: {}", plugin.error());
+    }
+
+    return (*plugin)->transform(std::move(param));
+}
+
 // Injects nth constructor argument
 template <typename Module, typename T>
 Result<T> get(InjectContext ctx) {
@@ -111,8 +138,12 @@ Result<T> get(InjectContext ctx) {
         return error("dependency index {} is out of range [0..{})", ctx.arg_index, deps.size());
     }
 
-    auto&& param = ctx.config.deps[ctx.arg_index];
-    return get<Module, T>(ctx, param);
+    Result<rfl::Generic> maybe_param = transform(ctx, ctx.config.deps[ctx.arg_index]);
+    if (!maybe_param) {
+        return error(maybe_param.error());
+    }
+
+    return get<Module, T>(ctx, *std::move(maybe_param));
 }
 
 template <typename T>

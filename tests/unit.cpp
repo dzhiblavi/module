@@ -1,4 +1,5 @@
 #include <module/Context.h>
+#include <module/Plugin.h>
 #include <module/config.h>
 #include <module/register.h>
 
@@ -296,6 +297,46 @@ TEST_CASE("module/deps/module/unordered_map") {
     Context ctx(*config, &storage);
 
     auto mod = ctx.getModule<C>("test");
+    CHECK(mod.has_value());
+}
+
+TEST_CASE("module/deps/plugin/no_plugin") {
+    struct M : Plugin {
+        rfl::Generic transform(rfl::Generic param) override {
+            auto value = (*param.to_object()).at("value").to_int().value();
+            return value * 2;
+        }
+    };
+
+    struct C {
+        C(int x) { CHECK(x == 2 * 123); }
+    };
+
+    std::string config_str = R"({
+        "clap": {
+            "cls": "M"
+        },
+        "test": {
+            "cls": "C",
+            "deps": [
+                {
+                    "@plugin": "clap",
+                    "value": 123
+                }
+            ]
+        }
+    })";
+
+    auto config = rfl::json::read<ModulesConfig, rfl::DefaultIfMissing>(config_str);
+    REQUIRE(config);
+
+    Storage storage;
+    storage.add("C", detail::makeModuleTraits<C>());
+    storage.add("M", detail::makeModuleTraits<M>());
+    Context ctx(*config, &storage);
+
+    auto mod = ctx.getModule<C>("test");
+    std::println("{}", mod.error());
     CHECK(mod.has_value());
 }
 
