@@ -18,7 +18,7 @@ struct InjectContext {
 
 // Value injector (config, string, int etc.)
 template <typename Module, typename T>
-std::expected<T, std::string> inject(InjectContext ctx) {
+std::expected<T, std::string> get(InjectContext ctx) {
     auto&& deps = ctx.config.deps;
 
     if (ctx.arg_index >= deps.size()) {
@@ -38,7 +38,7 @@ std::expected<T, std::string> inject(InjectContext ctx) {
 
 // Dependency injector (shared_ptr)
 template <typename Module, InstanceOfTemplate<std::shared_ptr> Dep>
-std::expected<Dep, std::string> inject(InjectContext ctx) {
+std::expected<Dep, std::string> get(InjectContext ctx) {
     auto&& deps = ctx.config.deps;
 
     if (ctx.arg_index >= deps.size()) {
@@ -57,21 +57,21 @@ std::expected<Dep, std::string> inject(InjectContext ctx) {
 
 // Dependency injector (weak_ptr)
 template <typename Module, InstanceOfTemplate<std::weak_ptr> Dep>
-std::expected<Dep, std::string> inject(InjectContext ctx) {
+std::expected<Dep, std::string> get(InjectContext ctx) {
     return inject<Module, std::shared_ptr<typename Dep::element_type>>(ctx);
 }
 
 // Dependency injector (raw pointer)
 template <typename Module, typename Dep>
 requires std::is_pointer_v<Dep>
-std::expected<Dep, std::string> inject(InjectContext ctx) {
+std::expected<Dep, std::string> get(InjectContext ctx) {
     return inject<Module, std::shared_ptr<std::remove_pointer_t<Dep>>>(ctx).and_then(
         [](auto m) -> std::expected<Dep, std::string> { return m.get(); });
 }
 
 // Dependency injector (vector of shared_ptrs)
 template <typename Module, InstanceOfTemplate<std::vector> Deps>
-std::expected<Deps, std::string> inject(InjectContext ctx) {
+std::expected<Deps, std::string> get(InjectContext ctx) {
     auto&& deps = ctx.config.deps;
     if (ctx.arg_index >= deps.size()) {
         return Deps{};
