@@ -2,6 +2,7 @@
 
 #include "module/detail/error.h"
 
+#include <new>  // IWYU pragma: keep
 #include <rfl/Generic.hpp>
 
 namespace mod {
