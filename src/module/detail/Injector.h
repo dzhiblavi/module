@@ -111,8 +111,8 @@ Result<T> get(InjectContext ctx) {
         return error("dependency index {} is out of range [0..{})", ctx.arg_index, deps.size());
     }
 
-    auto&& config = ctx.config.deps[ctx.arg_index];
-    return get<Module, T>(ctx, config);
+    auto&& param = ctx.config.deps[ctx.arg_index];
+    return get<Module, T>(ctx, param);
 }
 
 template <typename T>
