@@ -57,14 +57,14 @@ Result<Dep> get(InjectContext ctx) {
 // Dependency injector (weak_ptr)
 template <typename Module, InstanceOfTemplate<std::weak_ptr> Dep>
 Result<Dep> get(InjectContext ctx) {
-    return inject<Module, std::shared_ptr<typename Dep::element_type>>(ctx);
+    return get<Module, std::shared_ptr<typename Dep::element_type>>(ctx);
 }
 
 // Dependency injector (raw pointer)
 template <typename Module, typename Dep>
 requires std::is_pointer_v<Dep>
 Result<Dep> get(InjectContext ctx) {
-    return inject<Module, std::shared_ptr<std::remove_pointer_t<Dep>>>(ctx).and_then([](auto m) {
+    return get<Module, std::shared_ptr<std::remove_pointer_t<Dep>>>(ctx).and_then([](auto m) {
         return ok(m.get());
     });
 }
