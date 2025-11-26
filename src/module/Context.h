@@ -12,7 +12,7 @@ namespace mod {
 class Context {
  public:
     explicit Context(Storage* storage);
-    explicit Context(ModulesConfig config, Storage* storage);
+    Context(ModulesConfig config, Storage* storage);
 
     void setConfig(ModulesConfig config);
     Result<void> loadAllModules();
