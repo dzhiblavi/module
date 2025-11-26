@@ -300,7 +300,7 @@ TEST_CASE("module/deps/module/unordered_map") {
     CHECK(mod.has_value());
 }
 
-TEST_CASE("module/deps/plugin/no_plugin") {
+TEST_CASE("module/deps/plugin/transform_once") {
     struct M : Plugin {
         Result<rfl::Generic> transform(rfl::Generic param) override {
             auto value = (*param.to_object()).at("value").to_int().value();
@@ -336,7 +336,54 @@ TEST_CASE("module/deps/plugin/no_plugin") {
     Context ctx(*config, &storage);
 
     auto mod = ctx.getModule<C>("test");
-    std::println("{}", mod.error());
+    CHECK(mod.has_value());
+}
+
+TEST_CASE("module/deps/plugin/transform_recursive") {
+    struct M : Plugin {
+        Result<rfl::Generic> transform(rfl::Generic param) override {
+            auto value = (*param.to_object()).at("value").to_int().value();
+            return value * 2;
+        }
+    };
+
+    struct C {
+        struct Config {
+            int x;
+        };
+
+        C(Config c) { CHECK(c.x == 2 * 2 * 123); }
+    };
+
+    std::string config_str = R"({
+        "clap": {
+            "cls": "M"
+        },
+        "test": {
+            "cls": "C",
+            "deps": [
+                {
+                    "x": {
+                        "@plugin": "clap",
+                        "value": {
+                            "@plugin": "clap",
+                            "value": 123
+                        }
+                    }
+                }
+            ]
+        }
+    })";
+
+    auto config = rfl::json::read<ModulesConfig, rfl::DefaultIfMissing>(config_str);
+    REQUIRE(config);
+
+    Storage storage;
+    storage.add("C", detail::makeModuleTraits<C>());
+    storage.add("M", detail::makeModuleTraits<M>());
+    Context ctx(*config, &storage);
+
+    auto mod = ctx.getModule<C>("test");
     CHECK(mod.has_value());
 }
 
