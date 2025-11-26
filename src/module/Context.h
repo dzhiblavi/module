@@ -51,10 +51,7 @@ Result<std::shared_ptr<T>> Context::getModule(const std::string& name) {
             }
 
             return error(
-                std::format(
-                    "type mismatch for module '{}', expected '{}'",
-                    name,
-                    rfl::type_name_t<T>().str()));
+                "type mismatch for module '{}', expected '{}'", name, rfl::type_name_t<T>().str());
         });
 }
 
