@@ -63,7 +63,7 @@ void Context::setConfig(ModulesConfig config) {
 Result<void> Context::loadAllModules() {
     for (auto&& [name, config] : config_) {
         if (auto e = getModule(name); !e.has_value()) {
-            return error("while loading '{}': {}", name, e.error());
+            return error(e.error());
         }
     }
 
