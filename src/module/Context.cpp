@@ -2,6 +2,9 @@
 
 namespace mod {
 
+Context::Context(Storage* storage) : storage_{storage} {
+}
+
 Context::Context(ModulesConfig config, Storage* storage)
     : config_{std::move(config)}
     , storage_{storage} {
@@ -51,6 +54,10 @@ std::optional<ModuleConfig> Context::getConfig(const std::string& name) {
     }
 
     return std::nullopt;
+}
+
+void Context::setConfig(ModulesConfig config) {
+    config_ = std::move(config);
 }
 
 Result<void> Context::loadAllModules() {

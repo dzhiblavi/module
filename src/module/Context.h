@@ -11,8 +11,10 @@ namespace mod {
 
 class Context {
  public:
-    Context(ModulesConfig config, Storage* storage);
+    explicit Context(Storage* storage);
+    explicit Context(ModulesConfig config, Storage* storage);
 
+    void setConfig(ModulesConfig config);
     Result<void> loadAllModules();
 
     template <typename T>
