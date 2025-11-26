@@ -1,6 +1,7 @@
 #pragma once
 
 #include "module/Context.h"
+#include "module/detail/error.h"
 #include "module/detail/instance_of_template.h"
 
 #include <rfl/from_generic.hpp>
@@ -18,12 +19,11 @@ struct InjectContext {
 
 // Value injector (config, string, int etc.)
 template <typename Module, typename T>
-std::expected<T, std::string> get(InjectContext ctx) {
+Result<T> get(InjectContext ctx) {
     auto&& deps = ctx.config.deps;
 
     if (ctx.arg_index >= deps.size()) {
-        return std::unexpected(
-            std::format("dependency index {} is out of range [0..{})", ctx.arg_index, deps.size()));
+        return error("dependency index {} is out of range [0..{})", ctx.arg_index, deps.size());
     }
 
     auto&& config = ctx.config.deps[ctx.arg_index];
@@ -33,23 +33,22 @@ std::expected<T, std::string> get(InjectContext ctx) {
         return *result;
     }
 
-    return std::unexpected(result.error()->what());
+    return error(result.error()->what());
 }
 
 // Dependency injector (shared_ptr)
 template <typename Module, InstanceOfTemplate<std::shared_ptr> Dep>
-std::expected<Dep, std::string> get(InjectContext ctx) {
+Result<Dep> get(InjectContext ctx) {
     auto&& deps = ctx.config.deps;
 
     if (ctx.arg_index >= deps.size()) {
-        return std::unexpected(
-            std::format("dependency index {} is out of range [0..{})", ctx.arg_index, deps.size()));
+        return error("dependency index {} is out of range [0..{})", ctx.arg_index, deps.size());
     }
 
     const auto& dep = deps[ctx.arg_index];
     auto name = dep.to_string();
     if (!name) {
-        return std::unexpected("string depencency expected");
+        return error("string depencency expected");
     }
 
     return ctx.context->getModule<typename Dep::element_type>(*name);
@@ -57,21 +56,22 @@ std::expected<Dep, std::string> get(InjectContext ctx) {
 
 // Dependency injector (weak_ptr)
 template <typename Module, InstanceOfTemplate<std::weak_ptr> Dep>
-std::expected<Dep, std::string> get(InjectContext ctx) {
+Result<Dep> get(InjectContext ctx) {
     return inject<Module, std::shared_ptr<typename Dep::element_type>>(ctx);
 }
 
 // Dependency injector (raw pointer)
 template <typename Module, typename Dep>
 requires std::is_pointer_v<Dep>
-std::expected<Dep, std::string> get(InjectContext ctx) {
-    return inject<Module, std::shared_ptr<std::remove_pointer_t<Dep>>>(ctx).and_then(
-        [](auto m) -> std::expected<Dep, std::string> { return m.get(); });
+Result<Dep> get(InjectContext ctx) {
+    return inject<Module, std::shared_ptr<std::remove_pointer_t<Dep>>>(ctx).and_then([](auto m) {
+        return ok(m.get());
+    });
 }
 
 // Dependency injector (vector of shared_ptrs)
 template <typename Module, InstanceOfTemplate<std::vector> Deps>
-std::expected<Deps, std::string> get(InjectContext ctx) {
+Result<Deps> get(InjectContext ctx) {
     auto&& deps = ctx.config.deps;
     if (ctx.arg_index >= deps.size()) {
         return Deps{};
@@ -83,7 +83,7 @@ std::expected<Deps, std::string> get(InjectContext ctx) {
     while (ctx.arg_index < deps.size()) {
         auto res = inject<Module, typename Deps::value_type>(ctx);
         if (!res) {
-            return std::unexpected(res.error());
+            return error(res.error());
         }
 
         result.push_back(std::move(*res));
@@ -94,15 +94,14 @@ std::expected<Deps, std::string> get(InjectContext ctx) {
 }
 
 template <typename T>
-T unwrap(const InjectContext& ctx, std::expected<T, std::string> value) {
-    value = std::move(value).or_else([&](auto err) -> std::expected<T, std::string> {
-        return std::unexpected(
-            std::format(
-                "while loading argument of type {} (index {}) for module '{}':\n{}",
-                rfl::type_name_t<T>().name(),
-                ctx.arg_index,
-                ctx.name,
-                err));
+T unwrap(const InjectContext& ctx, Result<T> value) {
+    value = std::move(value).or_else([&](auto err) -> Result<T> {
+        return error(
+            "while loading argument of type {} (index {}) for module '{}':\n{}",
+            rfl::type_name_t<T>().name(),
+            ctx.arg_index,
+            ctx.name,
+            err);
     });
 
     if (!value) {

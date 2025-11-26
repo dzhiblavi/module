@@ -4,9 +4,9 @@
 
 namespace mod {
 
-std::expected<void, std::string> Storage::add(const std::string& name, detail::Traits* traits) {
+Result<void> Storage::add(const std::string& name, detail::Traits* traits) {
     if (traits_.contains(name)) {
-        return std::unexpected(std::format("trait '{}' is already registered", name));
+        return error("trait '{}' is already registered", name);
     }
 
     traits_.emplace(name, traits);

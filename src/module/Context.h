@@ -6,22 +6,20 @@
 
 #include <rfl/type_name_t.hpp>
 
-#include <expected>
-
 namespace mod {
 
 class Context {
  public:
     Context(ModulesConfig config, Storage* storage);
 
-    std::expected<void, std::string> loadAllModules();
+    Result<void> loadAllModules();
 
     template <typename T>
-    std::expected<std::shared_ptr<T>, std::string> getModule(const std::string& name);
+    Result<std::shared_ptr<T>> getModule(const std::string& name);
 
  private:
-    std::expected<std::shared_ptr<detail::Module>, std::string> getModule(const std::string& name);
-    std::expected<std::shared_ptr<detail::Module>, std::string> loadModule(const std::string& name);
+    Result<std::shared_ptr<detail::Module>> getModule(const std::string& name);
+    Result<std::shared_ptr<detail::Module>> loadModule(const std::string& name);
     std::optional<ModuleConfig> getConfig(const std::string& name);
 
     ModulesConfig config_;
@@ -30,13 +28,14 @@ class Context {
 };
 
 template <typename T>
-std::expected<std::shared_ptr<T>, std::string> Context::getModule(const std::string& name) {
+Result<std::shared_ptr<T>> Context::getModule(const std::string& name) {
     return getModule(name).and_then(
-        [&](std::shared_ptr<detail::Module> mod) -> std::expected<std::shared_ptr<T>, std::string> {
+        [&](std::shared_ptr<detail::Module> mod) -> Result<std::shared_ptr<T>> {
             if (auto t = std::dynamic_pointer_cast<T>(std::move(mod))) {
-                return t;
+                return ok(std::move(t));
             }
-            return std::unexpected(
+
+            return error(
                 std::format(
                     "type mismatch for module '{}', expected '{}'",
                     name,

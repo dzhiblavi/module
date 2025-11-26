@@ -2,7 +2,6 @@
 
 #include "module/detail/Traits.h"
 
-#include <expected>
 #include <string>
 #include <unordered_map>
 
@@ -12,7 +11,7 @@ class Storage {
  public:
     Storage() = default;
 
-    std::expected<void, std::string> add(const std::string& name, detail::Traits* traits);
+    Result<void> add(const std::string& name, detail::Traits* traits);
     std::optional<detail::Traits*> get(const std::string& name);
 
     static Storage& instance();

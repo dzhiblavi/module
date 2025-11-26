@@ -3,7 +3,6 @@
 #include "module/config.h"
 #include "module/detail/Interface.h"
 
-#include <expected>
 #include <memory>
 
 namespace mod {
@@ -16,7 +15,7 @@ class Traits {
  public:
     virtual ~Traits() = default;
 
-    virtual std::expected<std::shared_ptr<Module>, std::string> create(
+    virtual Result<std::shared_ptr<Module>> create(
         Context* context, const ModuleConfig& config, const std::string& name) = 0;
 };
 

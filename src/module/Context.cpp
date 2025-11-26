@@ -7,8 +7,7 @@ Context::Context(ModulesConfig config, Storage* storage)
     , storage_{storage} {
 }
 
-std::expected<std::shared_ptr<detail::Module>, std::string> Context::getModule(
-    const std::string& name) {
+Result<std::shared_ptr<detail::Module>> Context::getModule(const std::string& name) {
     if (auto it = modules_.find(name); it != modules_.end()) {
         return it->second;
     }
@@ -16,24 +15,21 @@ std::expected<std::shared_ptr<detail::Module>, std::string> Context::getModule(
     return loadModule(name);
 }
 
-std::expected<std::shared_ptr<detail::Module>, std::string> Context::loadModule(
-    const std::string& name) {
-    using R = std::expected<std::shared_ptr<detail::Module>, std::string>;
-
+Result<std::shared_ptr<detail::Module>> Context::loadModule(const std::string& name) {
     auto maybe_config = getConfig(name);
     if (!maybe_config) {
-        return std::unexpected("module not configured");
+        return error("module not configured");
     }
     auto config = *std::move(maybe_config);
 
     auto maybe_traits = storage_->get(config.cls);
     if (!maybe_traits) {
-        return std::unexpected(std::format("unknown type '{}'", config.cls));
+        return error("unknown type '{}'", config.cls);
     }
 
-    return maybe_traits.value()->create(this, config, name).and_then([&](auto mod) -> R {
+    return maybe_traits.value()->create(this, config, name).and_then([&](auto mod) {
         modules_.emplace(name, mod);
-        return mod;
+        return ok(std::move(mod));
     });
 }
 
@@ -45,10 +41,10 @@ std::optional<ModuleConfig> Context::getConfig(const std::string& name) {
     return std::nullopt;
 }
 
-std::expected<void, std::string> Context::loadAllModules() {
+Result<void> Context::loadAllModules() {
     for (auto&& [name, config] : config_) {
         if (auto e = getModule(name); !e.has_value()) {
-            return std::unexpected(std::format("error while loading '{}': {}", name, e.error()));
+            return error("error while loading '{}': {}", name, e.error());
         }
     }
 

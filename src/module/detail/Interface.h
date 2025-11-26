@@ -1,8 +1,8 @@
 #pragma once
 
-#include <expected>
+#include "module/detail/error.h"
+
 #include <memory>
-#include <string>
 
 namespace mod::detail {
 
@@ -13,7 +13,7 @@ class Module {
 
 class Factory : public Module {
  public:
-    virtual std::expected<std::shared_ptr<Module>, std::string> modCreate() = 0;
+    virtual Result<std::shared_ptr<Module>> modCreate() = 0;
 };
 
 }  // namespace mod::detail

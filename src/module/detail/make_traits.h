@@ -14,7 +14,7 @@ Traits* makeModuleTraits() {
         using Bridge = ModuleBridge<T>;
 
      public:
-        std::expected<std::shared_ptr<Module>, std::string> create(
+        Result<std::shared_ptr<Module>> create(
             Context* context, const ModuleConfig& config, const std::string& name) override {
             try {
                 return std::apply(
@@ -22,8 +22,8 @@ Traits* makeModuleTraits() {
                         return std::make_shared<Bridge>(std::move(args)...);
                     },
                     std::move(makeInjectors(context, config, name)));
-            } catch (std::string error) {
-                return std::unexpected(std::move(error));
+            } catch (std::string e) {
+                return error(std::move(e));
             }
         }
 
