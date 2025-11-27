@@ -1,8 +1,8 @@
 #pragma once
 
+#include "module/Context.h"
 #include "module/detail/error.h"
 #include "module/detail/instance_of_template.h"
-#include "module/detail/transform.h"
 
 #include <rfl/from_generic.hpp>
 
@@ -103,12 +103,7 @@ Result<Deps> getImpl(InjectContext ctx, const rfl::Generic& param) {
 
 template <typename Module, typename T>
 Result<T> get(InjectContext ctx, const rfl::Generic& param) {
-    Result<rfl::Generic> maybe_param = transformRecursive(ctx.context, param);
-    if (!maybe_param) {
-        return error(maybe_param.error());
-    }
-
-    return getImpl<Module, T>(ctx, *std::move(maybe_param));
+    return getImpl<Module, T>(ctx, param);
 }
 
 // Injects nth constructor argument
