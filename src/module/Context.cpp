@@ -33,7 +33,7 @@ Result<std::shared_ptr<detail::Module>> Context::loadModule(const std::string& n
     return with(maybe_traits.value()->create(this, config, name), "while creating")
         .and_then([&](auto mod) {
             return with(insertModule(name, mod), "while inserting").and_then([&] {
-                return ok(std::move(mod));
+                return ::mod::ok(std::move(mod));
             });
         });
 }

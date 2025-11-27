@@ -38,7 +38,7 @@ template <typename T, typename... Args>
 Result<std::shared_ptr<T>> Context::emplace(const std::string& name, Args&&... args) {
     auto mod = std::make_shared<detail::ModuleBridge<T>>(std::forward<Args>(args)...);
     return with(insertModule(name, mod), "in emplace('{}')", name).and_then([&] {
-        return ok(std::move(mod));
+        return ::mod::ok(std::move(mod));
     });
 }
 
@@ -47,7 +47,7 @@ Result<std::shared_ptr<T>> Context::getModule(const std::string& name) {
     return getModule(name).and_then(
         [&](std::shared_ptr<detail::Module> mod) -> Result<std::shared_ptr<T>> {
             if (auto t = std::dynamic_pointer_cast<T>(std::move(mod))) {
-                return ok(std::move(t));
+                return ::mod::ok(std::move(t));
             }
 
             return error(

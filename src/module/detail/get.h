@@ -46,7 +46,7 @@ template <typename Module, typename Dep>
 requires std::is_pointer_v<Dep>
 Result<Dep> getImpl(InjectContext ctx, const rfl::Generic& param) {
     return get<Module, std::shared_ptr<std::remove_pointer_t<Dep>>>(ctx, param)
-        .and_then([](auto m) { return ok(m.get()); });
+        .and_then([](auto m) { return ::mod::ok(m.get()); });
 }
 
 // Vector
