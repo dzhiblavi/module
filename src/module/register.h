@@ -1,8 +1,15 @@
 #pragma once
 
-#include "module/detail/Registerer.h"     // IWYU pragma: keep
-#include "module/detail/anon_var_name.h"  // IWYU pragma: keep
+#include "module/Storage.h"
+#include "module/detail/make_traits.h"
 
-#define MODULE_REGISTER(Type)                                        \
-    [[maybe_unused]] const auto MODULE_ANON_VAR(module_registerer) = \
-        ::mod::detail::Registerer<Type>(#Type)
+#include <rfl/type_name_t.hpp>
+
+namespace mod {
+
+template <typename T>
+Result<void> registerModule(Storage* storage) {
+    return storage->add(rfl::type_name_t<T>().str(), detail::makeModuleTraits<T>());
+}
+
+}  // namespace mod

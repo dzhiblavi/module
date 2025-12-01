@@ -21,9 +21,4 @@ std::optional<detail::Traits*> Storage::get(const std::string& name) {
     return std::nullopt;
 }
 
-Storage& Storage::instance() {
-    static Storage storage;
-    return storage;
-}
-
 }  // namespace mod

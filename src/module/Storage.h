@@ -14,8 +14,6 @@ class Storage {
     Result<void> add(const std::string& name, detail::Traits* traits);
     std::optional<detail::Traits*> get(const std::string& name);
 
-    static Storage& instance();
-
  private:
     std::unordered_map<std::string, detail::Traits*> traits_;
 };
