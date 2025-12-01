@@ -2,6 +2,7 @@
 
 #include "module/config.h"
 #include "module/detail/Interface.h"
+#include "module/detail/error.h"
 
 #include <memory>
 
